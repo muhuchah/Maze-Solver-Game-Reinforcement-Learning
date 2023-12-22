@@ -1,11 +1,13 @@
 import gym
 import gym_maze
 import time
+import random
 import numpy as np
 
 X, Y = 10, 10
 START = [0, 0]
 GOAL = [9, 9]
+EPSILON = 0.1
 
 class RLQ:
     def __init__(self, discount_factor, learning_rate):
@@ -14,8 +16,9 @@ class RLQ:
         self.gama = discount_factor
         self.learning_rate = learning_rate
 
-        self.action_reward = -0.01
-        self.goal_reward = 10
+        self.action_reward = -0.001
+        self.goal_reward = 1
+
 
     def update_pi(self, state):
         # action is index_max
@@ -38,42 +41,41 @@ class RLQ:
         self.update_pi(state)
     
     def print_pi(self):
-        direction = {0: '^', 1: '>', 2: 'V', 3: '<'}
+        direction = {0: '^', 1: 'v', 2: '>', 3: '<'}
         for i in range(X):
             for j in range(Y):
                 print(direction[self.
                       pi[i, j]], end=" ")
             print()
         print()
+    
+    def print_q(self):
+        for i in range(X):
+            for j in range(Y):
+                action = max(range(len(self.Q[i, j])), key=self.Q[i, j].__getitem__)
+                ac = {0: '^', 1: 'v', 2: '>', 3: '<'}
+                print(round(max(self.Q[i, j]), 2), end=f'{ac[action]}\t')
+            print()
 
 # Create an environment
 env = gym.make("maze-random-10x10-plus-v0")
 observation = env.reset()
 
 state = START
-agent = RLQ(discount_factor=0.99, learning_rate=0.3)
+agent = RLQ(discount_factor=0.95, learning_rate=0.1)
 
 # Define the maximum number of iterations
-NUM_EPISODES = 4000
+NUM_EPISODES = 1000000
 
 for episode in range(NUM_EPISODES):
-    env.render()
-
-    # TODO: Implement the agent policy here
-    # Note: .sample() is used to sample random action from the environment's action space
-
-    # Choose an action (Replace this random action with your agent's policy)
-    action = agent.policy(state)
-    ac = {
-        0: '^',
-        1: '>',
-        2: 'v',
-        3: '<'
-    }
-    #print(ac[action])
-    #time.sleep(0.5)
-    # Perform the action and receive feedback from the environment
+    rnd = random.random()
+    if rnd < EPSILON:
+        action = random.randint(0, 3)
+    else:
+        action = agent.policy(state)
+    
     next_state, reward, done, truncated = env.step(action)
+
     next_state = list(reversed(next_state))
     agent.update(state=state, next_state=next_state, action=action)
     state = next_state
@@ -81,10 +83,32 @@ for episode in range(NUM_EPISODES):
     if done or truncated:
         observation = env.reset()
         state = START
+        EPSILON = 0.99 * EPSILON
+        
+wins = 0
+for episode in range(1000):
+    env.render()
+
+    action = agent.policy(state)
+
+    next_state, reward, done, truncated = env.step(action)
+    time.sleep(0.1)
+    
+    next_state = list(reversed(next_state))
+    state = next_state
+
+    if done:
+        wins += 1
+    if done or truncated:
+        observation = env.reset()
+        state = START
     
 
+print(f"wins: {wins}")
 agent.print_pi()
-time.sleep(1000)
+print()
+agent.print_q()
+time.sleep(60)
 
 # Close the environment
 env.close()
