@@ -73,7 +73,7 @@ state = START
 agent = RLQ(discount_factor=0.95, learning_rate=0.1)
 
 # Define the maximum number of iterations
-NUM_EPISODES_TRAIN = 500000
+NUM_EPISODES_TRAIN = 50_000
 NUM_EPISODES = 1000
 
 for episode in range(NUM_EPISODES_TRAIN):
